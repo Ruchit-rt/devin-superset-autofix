@@ -27,12 +27,21 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import CONFIG  # noqa: E402
 
 # package -> (vulnerable version, CVE, note)
+#
+# The first group are low-blast-radius leaf packages: the only safe version is one
+# Superset already tolerates, so the fix is essentially a clean re-bump.
+#
+# `werkzeug` is the deliberate "breaking-change" case: the patched version is a major
+# upgrade (2.x -> 3.x) that removes APIs (e.g. `werkzeug.urls.url_quote`/`url_encode`),
+# so remediating it requires actually fixing the breakage the bump introduces — not
+# just editing a pin. That's the part a bot/codemod can't do and Devin can.
 SEED = {
     "pyyaml": ("5.3.1", "CVE-2020-14343", "Arbitrary code execution via full_load"),
     "requests": ("2.19.1", "CVE-2018-18074", "Authorization header leak on redirect"),
     "certifi": ("2022.12.7", "CVE-2023-37920", "Bundles compromised e-Tugra root cert"),
     "urllib3": ("1.25.8", "CVE-2020-26137", "CRLF injection via request method"),
     "idna": ("2.8", "CVE-2024-3651", "DoS via resource consumption in idna.encode"),
+    "werkzeug": ("2.1.2", "CVE-2024-34069", "Debugger RCE; only fixed in 3.x (major bump)"),
 }
 
 TARGET_FILES = ["requirements/base.txt", "requirements/development.txt"]

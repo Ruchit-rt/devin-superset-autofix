@@ -66,7 +66,7 @@
       <thead>
         <tr>
           <th>CVE</th><th>Package</th><th>Severity</th><th>Bump</th><th>Status</th>
-          <th>Devin session</th><th>PR</th><th>Tests</th><th>ACUs</th>
+          <th>Devin session</th><th>PR</th><th>Tests</th><th>Devin time</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -77,7 +77,7 @@
   <script>
     const SEV_COLORS = { CRITICAL: "var(--crit)", HIGH: "var(--high)", MEDIUM: "var(--med)", LOW: "var(--low)", UNKNOWN: "var(--muted)" };
 
-    function fmtMttr(s) {
+    function fmtDuration(s) {
       if (s === null || s === undefined) return "—";
       const m = Math.floor(s / 60), sec = s % 60;
       return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
@@ -98,9 +98,9 @@
         tile("In progress", s.in_progress),
         tile("Fixed (PR)", `<span style="color:var(--ok)">${s.fixed}</span>`),
         tile("Failed", `<span style="color:var(--crit)">${s.failed}</span>`),
-        tile("MTTR", fmtMttr(s.mttr_seconds)),
+        tile("MTTR", fmtDuration(s.mttr_seconds)),
         tile("PRs opened", s.prs_opened),
-        tile("Total ACUs", s.total_acus),
+        tile("Engineer-hrs saved", `<span style="color:var(--ok)">${s.hours_saved}h</span>`),
         tile("Success rate", s.success_rate === null ? "—" : s.success_rate + "%"),
       ].join("");
 
@@ -125,7 +125,7 @@
             <td>${link(r.session_url, "open")}</td>
             <td>${link(r.pr_url, r.pr_url ? "PR" : "")}</td>
             <td>${tests(r.tests_passed)}</td>
-            <td class="mono">${(r.acus || 0).toFixed ? (r.acus || 0).toFixed(1) : (r.acus || 0)}</td>
+            <td class="mono">${fmtDuration(r.work_seconds)}</td>
           </tr>`).join("");
       }
       document.getElementById("updated").textContent = "updated " + new Date().toLocaleTimeString();

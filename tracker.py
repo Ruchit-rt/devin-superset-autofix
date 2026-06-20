@@ -9,6 +9,7 @@ Backs the observability story: status, PRs, ACUs, success rate, MTTR (issue -> P
 from __future__ import annotations
 
 import json
+import os
 import threading
 import time
 from datetime import datetime
@@ -16,6 +17,28 @@ from pathlib import Path
 from typing import Any, Optional
 
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "UNKNOWN": 4}
+
+# Conservative estimate of the manual engineering effort each completed remediation
+# replaces (triage the advisory + bump + fix breakage + run tests + open a PR).
+# Overridable so the productivity number can be calibrated per org.
+HOURS_SAVED_PER_FIX = float(os.environ.get("HOURS_SAVED_PER_FIX", "3"))
+
+
+def work_seconds(entry: dict[str, Any]) -> Optional[int]:
+    """How long Devin has been (or was) working on this finding.
+
+    dispatched -> fixed when finished; dispatched -> now while still running.
+    This stays meaningful in real time even before a session closes (when ACUs are
+    still 0), which is why the cockpit shows it instead of ACUs.
+    """
+    start = entry.get("dispatched_at")
+    if not start:
+        return None
+    if entry.get("fixed_at"):
+        return round(entry["fixed_at"] - start)
+    if entry.get("status") in {"running", "dispatched"}:
+        return round(time.time() - start)
+    return None
 
 
 def _iso_to_epoch(value: Optional[str]) -> Optional[float]:
@@ -176,6 +199,7 @@ class Tracker:
 
         total_acus = round(sum(float(e.get("acus", 0) or 0) for e in entries), 1)
         success_rate = round(100 * len(fixed) / len(dispatched)) if dispatched else None
+        hours_saved = round(len(fixed) * HOURS_SAVED_PER_FIX, 1)
 
         return {
             "cves_found": total,
@@ -183,6 +207,7 @@ class Tracker:
             "fixed": len(fixed),
             "failed": len(failed),
             "prs_opened": len(prs),
+            "hours_saved": hours_saved,
             "total_acus": total_acus,
             "success_rate": success_rate,
             "mttr_seconds": mttr_seconds,

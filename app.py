@@ -20,7 +20,7 @@ from devin_client import DevinClient
 from dispatcher import Dispatcher
 from github_client import GitHubClient
 from poller import Poller
-from tracker import Tracker
+from tracker import Tracker, work_seconds
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger("app")
@@ -94,6 +94,7 @@ def api_sessions():
             {
                 **e,
                 "bump": f"{e.get('current_version', '?')} → {e.get('fixed_version', '?')}",
+                "work_seconds": work_seconds(e),
             }
         )
     return jsonify({"summary": tracker.summary(), "sessions": rows, "dry_run": CONFIG.dry_run})
