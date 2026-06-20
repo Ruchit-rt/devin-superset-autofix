@@ -28,7 +28,7 @@ def _iso_to_epoch(value: Optional[str]) -> Optional[float]:
 
 
 def finding_key(cve_id: str, package: str) -> str:
-    return f"{cve_id}:{package}"
+    return f"{cve_id}:{package.lower()}"  # PyPI names are case-insensitive
 
 
 class Tracker:

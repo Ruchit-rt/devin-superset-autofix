@@ -26,7 +26,10 @@ logger = logging.getLogger("scan")
 def run_osv_scanner(lockfiles: list[str]) -> dict[str, Any]:
     cmd = ["osv-scanner", "--format", "json"]
     for lf in lockfiles:
-        cmd += ["--lockfile", lf]
+        # osv-scanner picks the parser by filename; Superset's requirements are
+        # named base.txt/development.txt, so tell it to parse them as requirements.
+        arg = f"requirements.txt:{lf}" if lf.endswith(".txt") else lf
+        cmd += ["--lockfile", arg]
     logger.info("running: %s", " ".join(cmd))
     try:
         # osv-scanner exits non-zero when vulns are found; that's expected.
@@ -45,7 +48,8 @@ def run_osv_scanner(lockfiles: list[str]) -> dict[str, Any]:
 # ── parsing ──────────────────────────────────────────────────────────────────
 def _severity_label(cvss_score: Optional[float], db_severity: Optional[str]) -> str:
     if db_severity:
-        return db_severity.upper()
+        s = db_severity.upper()
+        return "MEDIUM" if s == "MODERATE" else s  # normalize GitHub's MODERATE
     if cvss_score is None:
         return "UNKNOWN"
     if cvss_score >= 9.0:
