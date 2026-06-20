@@ -1,0 +1,15 @@
+services:
+  autofix:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      # persist tracker + sim state across restarts (keeps pre-run demo results)
+      - ./data:/app/data
+      # mount the fork's requirements read-only so the bundled scanner can scan them
+      - ../../requirements:/superset/requirements:ro
+    environment:
+      - SUPERSET_REPO_PATH=/superset
+    restart: unless-stopped

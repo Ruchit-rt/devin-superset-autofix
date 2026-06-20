@@ -1,0 +1,13 @@
+{
+  "action": "labeled",
+  "label": { "name": "devin-auto-fix" },
+  "repository": { "full_name": "Ruchit-rt/superset" },
+  "issue": {
+    "number": 9101,
+    "title": "[CRITICAL] CVE-2020-14343 in PyYAML 5.3.1",
+    "html_url": "https://github.com/Ruchit-rt/superset/issues/9101",
+    "created_at": "2026-06-20T13:00:00Z",
+    "labels": [{ "name": "security" }, { "name": "devin-auto-fix" }],
+    "body": "## Vulnerable dependency: `PyYAML`\n\nArbitrary code execution via full_load.\n\n<!-- devin-autofix-meta: {\"cve_id\": \"CVE-2020-14343\", \"package\": \"PyYAML\", \"ecosystem\": \"PyPI\", \"severity\": \"CRITICAL\", \"current_version\": \"5.3.1\", \"fixed_version\": \"5.4\", \"advisory_url\": \"https://github.com/advisories/GHSA-8q59-q68h-6hv4\"} -->\n"
+  }
+}

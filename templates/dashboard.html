@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Devin Security Remediation — Superset</title>
+  <style>
+    :root {
+      --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #e6edf3;
+      --muted: #8b949e; --accent: #58a6ff;
+      --crit: #f85149; --high: #ff7b72; --med: #d29922; --low: #3fb950; --ok: #3fb950;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    header { padding: 20px 28px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+    header h1 { font-size: 18px; margin: 0; }
+    header .repo { color: var(--accent); font-family: ui-monospace, monospace; }
+    .pill { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border);
+      color: var(--muted); }
+    .pill.dry { color: var(--med); border-color: var(--med); }
+    .pill.live { color: var(--ok); border-color: var(--ok); }
+    main { padding: 24px 28px; max-width: 1200px; }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px; margin-bottom: 18px; }
+    .tile { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    .tile .value { font-size: 26px; font-weight: 600; margin-top: 6px; }
+    .sev-chips { margin: 4px 0 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .chip { font-size: 12px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    table { width: 100%; border-collapse: collapse; background: var(--panel);
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+    tr:last-child td { border-bottom: none; }
+    td.mono, .mono { font-family: ui-monospace, monospace; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badge { font-size: 11px; padding: 2px 9px; border-radius: 10px; font-weight: 600; }
+    .b-fixed { background: rgba(63,185,80,.15); color: var(--ok); }
+    .b-running { background: rgba(88,166,255,.15); color: var(--accent); }
+    .b-dispatched { background: rgba(210,153,34,.15); color: var(--med); }
+    .b-failed { background: rgba(248,81,73,.15); color: var(--crit); }
+    .b-detected { background: rgba(139,148,158,.15); color: var(--muted); }
+    .sev-CRITICAL { color: var(--crit); font-weight: 600; }
+    .sev-HIGH { color: var(--high); font-weight: 600; }
+    .sev-MEDIUM { color: var(--med); }
+    .sev-LOW { color: var(--low); }
+    .footer { color: var(--muted); font-size: 12px; margin-top: 14px; }
+    .empty { color: var(--muted); padding: 40px; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛡️ Devin Security Remediation</h1>
+    <span class="repo">{{ repo }}</span>
+    <span class="pill {{ 'dry' if dry_run else 'live' }}">{{ 'DRY-RUN (simulated)' if dry_run else 'LIVE' }}</span>
+    <span class="pill" id="updated"></span>
+  </header>
+  <main>
+    <div class="tiles" id="tiles"></div>
+    <div class="sev-chips" id="sevchips"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>CVE</th><th>Package</th><th>Severity</th><th>Bump</th><th>Status</th>
+          <th>Devin session</th><th>PR</th><th>Tests</th><th>ACUs</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="footer">Auto-refreshes every 4s · MTTR = mean time from issue filed → PR opened</div>
+  </main>
+
+  <script>
+    const SEV_COLORS = { CRITICAL: "var(--crit)", HIGH: "var(--high)", MEDIUM: "var(--med)", LOW: "var(--low)", UNKNOWN: "var(--muted)" };
+
+    function fmtMttr(s) {
+      if (s === null || s === undefined) return "—";
+      const m = Math.floor(s / 60), sec = s % 60;
+      return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+    }
+    function tile(label, value) {
+      return `<div class="tile"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+    }
+    function link(url, text) { return url ? `<a href="${url}" target="_blank">${text}</a>` : "—"; }
+    function tests(v) { return v === true ? "✅ pass" : v === false ? "❌ fail" : "—"; }
+
+    async function refresh() {
+      const res = await fetch("/api/sessions");
+      const data = await res.json();
+      const s = data.summary;
+
+      document.getElementById("tiles").innerHTML = [
+        tile("CVEs found", s.cves_found),
+        tile("In progress", s.in_progress),
+        tile("Fixed (PR)", `<span style="color:var(--ok)">${s.fixed}</span>`),
+        tile("Failed", `<span style="color:var(--crit)">${s.failed}</span>`),
+        tile("MTTR", fmtMttr(s.mttr_seconds)),
+        tile("PRs opened", s.prs_opened),
+        tile("Total ACUs", s.total_acus),
+        tile("Success rate", s.success_rate === null ? "—" : s.success_rate + "%"),
+      ].join("");
+
+      const order = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"];
+      document.getElementById("sevchips").innerHTML = order
+        .filter(k => s.severity[k])
+        .map(k => `<span class="chip"><span class="dot" style="background:${SEV_COLORS[k]}"></span>${k} ${s.severity[k]}</span>`)
+        .join("");
+
+      const rows = data.sessions;
+      const tbody = document.getElementById("rows");
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty">No findings yet — run a scan (POST /scan) to populate.</td></tr>`;
+      } else {
+        tbody.innerHTML = rows.map(r => `
+          <tr>
+            <td class="mono">${link(r.advisory_url, r.cve_id)}</td>
+            <td class="mono">${r.package}</td>
+            <td class="sev-${r.severity}">${r.severity}</td>
+            <td class="mono">${r.bump}</td>
+            <td><span class="badge b-${r.status}">${r.status}</span></td>
+            <td>${link(r.session_url, "open")}</td>
+            <td>${link(r.pr_url, r.pr_url ? "PR" : "")}</td>
+            <td>${tests(r.tests_passed)}</td>
+            <td class="mono">${(r.acus || 0).toFixed ? (r.acus || 0).toFixed(1) : (r.acus || 0)}</td>
+          </tr>`).join("");
+      }
+      document.getElementById("updated").textContent = "updated " + new Date().toLocaleTimeString();
+    }
+    refresh();
+    setInterval(refresh, 4000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+{
+  "results": [
+    {
+      "source": { "path": "requirements/base.txt", "type": "lockfile" },
+      "packages": [
+        {
+          "package": { "name": "PyYAML", "version": "5.3.1", "ecosystem": "PyPI" },
+          "groups": [{ "ids": ["GHSA-8q59-q68h-6hv4"], "max_severity": "9.8" }],
+          "vulnerabilities": [
+            {
+              "id": "GHSA-8q59-q68h-6hv4",
+              "aliases": ["CVE-2020-14343"],
+              "summary": "Arbitrary code execution in PyYAML via full_load / FullLoader",
+              "affected": [
+                { "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "0" }, { "fixed": "5.4" }] }] }
+              ],
+              "references": [
+                { "type": "ADVISORY", "url": "https://github.com/advisories/GHSA-8q59-q68h-6hv4" }
+              ]
+            }
+          ]
+        },
+        {
+          "package": { "name": "requests", "version": "2.19.1", "ecosystem": "PyPI" },
+          "groups": [{ "ids": ["GHSA-x84v-xcm2-53pg"], "max_severity": "7.5" }],
+          "vulnerabilities": [
+            {
+              "id": "GHSA-x84v-xcm2-53pg",
+              "aliases": ["CVE-2018-18074"],
+              "summary": "requests leaks Authorization header on cross-origin redirect",
+              "affected": [
+                { "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "0" }, { "fixed": "2.20.0" }] }] }
+              ],
+              "references": [
+                { "type": "ADVISORY", "url": "https://github.com/advisories/GHSA-x84v-xcm2-53pg" }
+              ]
+            }
+          ]
+        },
+        {
+          "package": { "name": "certifi", "version": "2022.12.7", "ecosystem": "PyPI" },
+          "groups": [{ "ids": ["GHSA-xqr8-7jwr-rhjj"], "max_severity": "7.5" }],
+          "vulnerabilities": [
+            {
+              "id": "GHSA-xqr8-7jwr-rhjj",
+              "aliases": ["CVE-2023-37920"],
+              "summary": "certifi bundles a compromised e-Tugra root certificate",
+              "affected": [
+                { "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "0" }, { "fixed": "2023.7.22" }] }] }
+              ],
+              "references": [
+                { "type": "ADVISORY", "url": "https://github.com/advisories/GHSA-xqr8-7jwr-rhjj" }
+              ]
+            }
+          ]
+        },
+        {
+          "package": { "name": "urllib3", "version": "1.25.8", "ecosystem": "PyPI" },
+          "groups": [{ "ids": ["GHSA-wqvq-5m8c-6g24"], "max_severity": "6.5" }],
+          "vulnerabilities": [
+            {
+              "id": "GHSA-wqvq-5m8c-6g24",
+              "aliases": ["CVE-2020-26137"],
+              "summary": "urllib3 CRLF injection via HTTP request method",
+              "affected": [
+                { "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "0" }, { "fixed": "1.25.9" }] }] }
+              ],
+              "references": [
+                { "type": "ADVISORY", "url": "https://github.com/advisories/GHSA-wqvq-5m8c-6g24" }
+              ]
+            }
+          ]
+        },
+        {
+          "package": { "name": "idna", "version": "2.8", "ecosystem": "PyPI" },
+          "groups": [{ "ids": ["GHSA-jjg7-2v4v-x38h"], "max_severity": "6.2" }],
+          "vulnerabilities": [
+            {
+              "id": "GHSA-jjg7-2v4v-x38h",
+              "aliases": ["CVE-2024-3651"],
+              "summary": "idna denial of service via resource consumption in idna.encode",
+              "affected": [
+                { "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "0" }, { "fixed": "3.7" }] }] }
+              ],
+              "references": [
+                { "type": "ADVISORY", "url": "https://github.com/advisories/GHSA-jjg7-2v4v-x38h" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

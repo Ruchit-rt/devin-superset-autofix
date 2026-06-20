@@ -1,0 +1,15 @@
+# Secrets / local config
+.env
+
+# Runtime state
+data/*.json
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
