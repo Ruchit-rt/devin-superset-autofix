@@ -20,18 +20,27 @@ remediation to Devin via the API. It then tracks every session and surfaces the 
 ## Architecture
 
 ```text
-  scanner (this service)      Flask service (this repo, Docker)            Devin API
-  osv-scanner                 ┌──────────────────────────────────────┐  POST /sessions
-  on requirements/*.txt       │  scan.py     scan → curate → file      │ ──────────────▶ isolated VM:
-        ──files issues──────▶ │  /webhook/github   verify + filter      │                 bump dep,
-   (the EVENT: scan results)  │  poller      issues + session status    │ ◀─ GET /sessions  fix breakage,
-            │ human approves   │  dispatcher  → Devin API                │   status / PR     run tests,
-            │ via 'devin-auto- │  tracker     JSON store, dedupe, MTTR   │                  open PR
-            ▼ fix' label       │  /dashboard  + /api/sessions            │
-   <fork>/superset issue ────▶ └──────────────────────────────────────┘
-                                          │ PRs (bump + fix + green) land in
-                                          ▼  the target fork
+  osv-scanner  (scans requirements/*.txt)
+       |
+       |  files one GitHub issue per CVE
+       v
+  GitHub fork  (issues)
+       |
+       |  a human adds the 'devin-auto-fix' label      [or: polling fallback]
+       v
+  dispatcher  (webhook -> verify + filter, or poller)
+       |
+       |  POST /sessions
+       v
+  Devin API  ->  isolated VM:  bump dep -> fix breakage -> run tests -> open PR
+       |
+       |  PR lands in the fork    +    GET /sessions streams status back
+       v
+  tracker  ->  /dashboard   (status, MTTR, engineer-hours saved)
 ```
+
+*Detection stays local and cheap; only remediation spends an agent. The webhook and the polling fallback
+converge on the same dispatcher, and the tracker dedupes so they can't double-dispatch.*
 
 **Two repos.** This one is the *system*. The **Superset fork** (`TARGET_REPO`) holds the seeded
 vulnerable pins, the filed CVE issues, and the PRs Devin opens.
@@ -87,7 +96,7 @@ curl -X POST localhost:8080/webhook/github \
 open http://localhost:8080/dashboard
 ```
 
-Prefer Docker? `docker compose up --build` (defaults to DRY-RUN), then open the dashboard.
+Prefer Docker? `docker compose up --build` (defaults to DRY-RUN), then open the dashboard. Make sure to run `cp .env.example .env` or set upt the `.env` file before running!
 
 **Want it hands-off?** Set `AUTO_LABEL=true` in `.env`. The scanner then applies the trigger label
 itself, and the **polling fallback** dispatches every filed issue automatically within `POLL_INTERVAL`
